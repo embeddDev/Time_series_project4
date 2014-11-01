@@ -12,15 +12,7 @@ y_rm = sat.dat$rm
 y_theta= sat.dat$theta_m
 y = matrix(c(y_rm,y_theta),nrow=2,ncol=50,byrow=T)
 sat.dat$V3 = NULL
-plot(y = sat.dat$rm * sin(sat.dat$theta_m),
-     x = sat.dat$rm * cos(sat.dat$theta_m),
-     type='l',
-     col=2,
-     lwd=3,
-     ylab = "y",
-     xlab = "x",
-     main = "Satellite measurement data")
-grid()
+
  #TASK1 - State space model
 
 #we have  >>>  x = t[r theta omega]
@@ -40,9 +32,10 @@ sigma2 = matrix(c(2000,0, 0,0.03),nrow=2,ncol=2,byrow=TRUE)
 n = length(y_rm)
 # Initialize variables for storing results
 Kt.store <- matrix(NA,n,6)
-Xhr <- Xhp <- Kt.store
+
+Xhr <- Xhp <- matrix(NA,n,3)
 Sxx.r <- Sxx.p <- matrix(NA,n,9) # 3x3 flett ut
-Syy.p <- rep(NA,n,4)            # 2x2 flett ut
+Syy.p <- matrix(NA,nrow=n,ncol=4)            # 2x2 flett ut
 
 # Initiailzation
 Xh.t.tm1 <- matrix(c(sat.dat$rm[1], sat.dat$theta_m[1],0),nrow=3,ncol=1,byrow=T)
@@ -66,7 +59,7 @@ Xhr[1,] <- t(Xh.t.t)
 Sxx.r[1,] <- as.vector(Sxx.t.t)
 Xhp[1,] <- t(Xh.tp1.t)
 Sxx.p[1,] <- as.vector(Sxx.tp1.t)
-Syy.p[1] <- Syy.tp1.t                       #warning
+Syy.p[1,] <- as.vector(Syy.tp1.t)                       #warning
 
 # Prepare for next iteration
 Xh.t.tm1 <- Xh.tp1.t
@@ -78,14 +71,14 @@ for(tt in 2:n){
   if(is.na(y[,tt])){
     yy <- C%*%Xh.t.tm1
   }else{
-    yy <- t(y[,tt])
+    yy <- y[,tt]
   }
-  
+  #reconstruction
   Kt <- Sxx.t.tm1 %*% t(C) %*% solve(Syy.t.tm1)
-  Xh.t.t <- Xh.t.tm1 + Kt %*% (t(yy) - C%*%Xh.t.tm1)
+  Xh.t.t <- Xh.t.tm1 + Kt %*% (yy - C%*%Xh.t.tm1)
   Sxx.t.t = Sxx.t.tm1 - Kt %*% Syy.t.tm1 %*% t(Kt)
   
-  #Preciction
+  #Prediction
   Xh.tp1.t <- A %*% Xh.t.t
   Sxx.tp1.t <- A %*% Sxx.t.t %*% t(A) + sigma1
   Syy.tp1.t <- C %*% Sxx.tp1.t %*% t(C) + sigma2
@@ -96,7 +89,7 @@ for(tt in 2:n){
   Sxx.r[tt,] <- as.vector(Sxx.t.t)
   Xhp[tt,] <- t(Xh.tp1.t)
   Sxx.p[tt,] <- as.vector(Sxx.tp1.t)
-  Syy.p[tt] <- Syy.tp1.t
+  Syy.p[tt,] <- as.vector(Syy.tp1.t)
   
   # Prepare for next iteration
   Xh.t.tm1 <- Xh.tp1.t
@@ -104,9 +97,30 @@ for(tt in 2:n){
   Syy.t.tm1 <- Syy.tp1.t
 }
 
-kalman_rm = Xhr[,1:3]
-kalman_theta = Xhr[,4:6]
+rm_p = Xhp[,1]
+theta_p = Xhp[,2]
+rm_r = Xhp[,1]
+theta_r = Xhp[,2]
 
 #plot xhat
-plot((kalman_rm*sin(kalman_theta)) ~ (kalman_rm * sin(kalman_theta)),type='l',col=2)
+plot(x=(rm_p*cos(theta_p)),
+     y= (rm_p * sin(theta_p)),type='l',col=3)
+lines(x=(rm_p*cos(theta_p)),
+     y= (rm_p * sin(theta_p)),type='l',col=3)
+lines(y = sat.dat$rm * sin(sat.dat$theta_m),
+     x = sat.dat$rm * cos(sat.dat$theta_m),
+     type='l',
+     col=2,
+     lwd=2,
+     ylab = "y",
+     xlab = "x"
+     )
+grid()
+legend("topright",
+       c("prediction", "observation"),
+       lty = 1,
+       col=c('green', 'red'),
+       cex=0.6)
+
+
 
