@@ -36,8 +36,7 @@ acf(dat$Price)
 pacf(dat$Price)
 # Greinilega eitthvad seasonal i tessu, notum (1,0,1)^24 og (1,0,0)^168 eins og gefid er i verkefni
 
-#R_null = (0 0 0 ; 0 0 0 0) (7x7 fylki af núllum)
-Rt 
+
 #R_einn er þá R_null + x_1*x^T
 #sum of squares , inniheldur thennan part af covariancinum
 #theta(covariancinn held eg) =[ (x^T*X)^-1 ] *x^T*Y (á bladi)
@@ -52,36 +51,66 @@ Rt
 #             dat$Price(145) + 
 #             P(1)
 #           ,x=T,y=T)
-mdl <- lm(dat$Price ~ dat$Wind(169) + 
-            dat$Consumtion(168) + 
-            dat$Price(168) +
-            dat$Price(145),
-          x=T,y=T)
-#mdl = arma(dat$Price, order= c(2,0,0),
-#          seasonal = (list(order=c(1,0,1),period=24))) )
-X <- cbind(mdl$x,NA)
-Y <- mdl$y
 
-X[1:1000,7] <- mdl$residuals[1:1000]
+mdl <- lm(1 ~ dat$Wind[169] + 
+            dat$Consumption[169] + 
+            dat$Price[145] +
+            dat$Price[168]+
+            dat$Price[1],
+          x=T,y=T)
+(XX = as.matrix(mdl$x))
+Y = as.matrix(mdl$y)
+
+#nSamp= 8759
+nSamp = 1000
+#XX = matrix(XX,nrow=,ncol=7,byrow=T)
+Pt = dat$Price[169:nSamp]
+Pt1 = dat$Price[(169-1):(nSamp-1)]
+
+Lt = dat$Consumption[169:nSamp]
+Pt24 = dat$Price[ (169-24) :(nSamp-24)]
+Pt168 = dat$Price[1:(nSamp - 168)]
+Wt = dat$Wind[169:nSamp]
+P0 = rep(1,(nSamp-168))
+err = c(mdl$residuals, rep(0.1,(nSamp- 168-1)))
+
+XX = cbind(P0,Wt,Lt,Pt1,Pt24,Pt168,err)
 
 # Initialize-a th�etu, sem 0 vigur
-
+theta = matrix(0,7,1)
 # Initialize-a R = zeros(7x7) matrix
-
+Rt = matrix(0,7,7)
+n = nrow(XX)-1
+# Initialize empty matix and vector for storing
+theta.store <- matrix(NA,nrow(XX),7)
+yhat <- rep(NA,nrow(XX))
+lmbd <- 1
 # gera recursive:
 # for t = 169:n
-for(t in 169:n){
+for(tt in 1:n){
+   
   # Reikna R(t) =  lambda*R(t-1) + x(t)*x(t)^T   byrja med lambda = 1, fa til ad virka
   # Uppfaera theta(theta) = theta(t-1)+R(t)^-1*x(t)*(Y(t)-X(t)^T*theta(t-1)) setja try utanum if(class(þeta)!="try-error") ef þetta heldur þá þetta true og þá hægt að reikna restina af dótinu
   # Reikna Y(t+k|t) = Price(t) = langa jafnan
   # a morgun veit eg 
   # Uppfaera X, þe. uppfaera eps   
   
+  xt <- XX[tt,]
+  #Update Rt
+  Rt <- xt%*%t(xt) + lmbd*Rt
+  # Use "try" until Rt becomes invertible
+  theta.try <- try(theta + solve(Rt)%*%xt%*%(Y[tt] - t(xt)%*%theta),silent=T)
+  if(class(theta.try) != "try-error"){
+    #Update theta
+    theta <- theta.try
+    #Store
+    theta.store[tt,] <- theta
+    #Predict
+    yhat[tt+1] <- t(XX[(tt+1),]) %*% theta
+  }
 }
 
-
-
-# nota fyrsta árið til að optimera lambda, prófa svo það lambda á seinna árið. 
+# nota fyrsta arid til ad optimera lambda, profa svo that lambda a seinna arid. 
 
 
 
