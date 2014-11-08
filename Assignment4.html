@@ -142,8 +142,11 @@ v^p_{\theta,t} &amp;= v^p_{\theta,t-1} + \varepsilon^p_{v_\theta,t}
 
 dat$Time &lt;- seq(as.POSIXct(as.character(dat$Date[1]),format=&quot;%e.%m.%Y&quot;,tz=&quot;CET&quot;)+3600,by=3600,length.out=nrow(dat))
 dat$Hour &lt;- as.numeric(dat$Hour)
-dat$Date &lt;- format(dat$Time,format=&quot;%Y-%m-%d&quot;)</code></pre>
-<p>The use of <em>seq</em> for generating the time stamps is necessary since the times in the original data are incorrect.</p>
+dat$Date &lt;- format(dat$Time,format=&quot;%Y-%m-%d&quot;)
+
+dat$Price[dat$Price &gt; 600] &lt;- 600
+dat$Price[dat$Price &lt; 0] &lt;- 0</code></pre>
+<p>The use of <em>seq</em> for generating the time stamps is necessary since the times in the original data are incorrect. We then truncate our prices to be between 0 and 600 DKK/MWh to limit the spikes in the data series. In practice we would use robust parameter estimation for dealing with this.</p>
 <p>You should use data from 2013 as a training set and data from 2014 as a test set.</p>
 </div>
 <div id="the-assignment" class="section level3">
