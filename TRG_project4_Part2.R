@@ -6,6 +6,10 @@
 ############################################################################################
 
 # ---------------- PART 2 ----------------
+
+# Na i gogn i Makka
+# dat <- rbind(read.csv2("Elspot2013.csv",encoding = "UTF-8"),read.csv2("Elspot2014forMac.csv",encoding = "UTF-8"))
+# Na i gogn i Windows
 dat <- rbind(read.csv2("Elspot2013.csv",encoding = "UTF-8"),read.csv2("Elspot2014.csv",encoding = "UTF-8"))
 dat$Time <- seq(as.POSIXct(as.character(dat$Date[1]),format="%e.%m.%Y",tz="CET")+3600,by=3600,length.out=nrow(dat))
 dat$Hours <- as.numeric(dat$Hours)
@@ -60,7 +64,7 @@ err = c(mdl$residuals, rep(0,(nSamp- 168-1)))
 
 XX = cbind(P0,Wt,Lt,Pt1,Pt24,Pt168,err)
 
-# Initialize-a thžetu, sem 0 vigur
+# Initialize-a th?etu, sem 0 vigur
 theta = matrix(0,7,1)
 # Initialize-a R = zeros(7x7) matrix
 Rt = matrix(0,7,7)
