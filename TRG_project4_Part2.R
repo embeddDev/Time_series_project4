@@ -36,22 +36,6 @@ acf(dat$Price)
 pacf(dat$Price)
 # Greinilega eitthvad seasonal i tessu, notum (1,0,1)^24 og (1,0,0)^168 eins og gefid er i verkefni
 
-
-#R_einn er þá R_null + x_1*x^T
-#sum of squares , inniheldur thennan part af covariancinum
-#theta(covariancinn held eg) =[ (x^T*X)^-1 ] *x^T*Y (á bladi)
-
-# Initialize-a X, fyrsta lina i X er (1 Wind(169) Consumtion(168) Price(168) Price(145) P(1) eps(145))
-
-#bua til df sem inniheldur Wind(169) Consumtion(168) Price(168) Price(145) P(1) P(0)
-
-# mdl <- lm(P(0) ~ dat$Wind(169) + 
-#             dat$Consumtion(168) + 
-#             dat$Price(168) +
-#             dat$Price(145) + 
-#             P(1)
-#           ,x=T,y=T)
-
 mdl <- lm(1 ~ dat$Wind[169] + 
             dat$Consumption[169] + 
             dat$Price[145] +
@@ -72,7 +56,7 @@ Pt24 = dat$Price[ (169-24) :(nSamp-24)]
 Pt168 = dat$Price[1:(nSamp - 168)]
 Wt = dat$Wind[169:nSamp]
 P0 = rep(1,(nSamp-168))
-err = c(mdl$residuals, rep(0.1,(nSamp- 168-1)))
+err = c(mdl$residuals, rep(0,(nSamp- 168-1)))
 
 XX = cbind(P0,Wt,Lt,Pt1,Pt24,Pt168,err)
 
@@ -83,11 +67,12 @@ Rt = matrix(0,7,7)
 n = nrow(XX)-1
 # Initialize empty matix and vector for storing
 theta.store <- matrix(NA,nrow(XX),7)
+det.store = matrix(NA,nrow(XX),1)
 yhat <- rep(NA,nrow(XX))
 lmbd <- 1
 # gera recursive:
 # for t = 169:n
-for(tt in 1:n){
+for(tt in 169:n){
    
   # Reikna R(t) =  lambda*R(t-1) + x(t)*x(t)^T   byrja med lambda = 1, fa til ad virka
   # Uppfaera theta(theta) = theta(t-1)+R(t)^-1*x(t)*(Y(t)-X(t)^T*theta(t-1)) setja try utanum if(class(þeta)!="try-error") ef þetta heldur þá þetta true og þá hægt að reikna restina af dótinu
@@ -98,6 +83,7 @@ for(tt in 1:n){
   xt <- XX[tt,]
   #Update Rt
   Rt <- xt%*%t(xt) + lmbd*Rt
+  det.store[tt] = det(Rt)
   # Use "try" until Rt becomes invertible
   theta.try <- try(theta + solve(Rt)%*%xt%*%(Y[tt] - t(xt)%*%theta),silent=T)
   if(class(theta.try) != "try-error"){
@@ -107,6 +93,7 @@ for(tt in 1:n){
     theta.store[tt,] <- theta
     #Predict
     yhat[tt+1] <- t(XX[(tt+1),]) %*% theta
+    XX[tt+1,7] = (Pt[tt+1]- yhat[tt+1]) 
   }
 }
 
