@@ -15,7 +15,7 @@ dat$Time <- seq(as.POSIXct(as.character(dat$Date[1]),format="%e.%m.%Y",tz="CET")
 dat$Hours <- as.numeric(dat$Hours)
 #dat$Price = as.numeric(dat$Price)
 dat$Date <- format(dat$Time,format="%Y-%m-%d")
-
+dat2013 = dat[]
 plot(ts(dat$Price,start=c(2013,1),f=(365*24)),
      type = 'l',
      main='Price of Electricity',
@@ -40,29 +40,47 @@ acf(dat$Price)
 pacf(dat$Price)
 # Greinilega eitthvad seasonal i tessu, notum (1,0,1)^24 og (1,0,0)^168 eins og gefid er i verkefni
 
-mdl <- lm(1 ~ dat$Wind[169] + 
-            dat$Consumption[169] + 
-            dat$Price[145] +
-            dat$Price[168]+
-            dat$Price[1],
-          x=T,y=T)
-(XX = as.matrix(mdl$x))
-Y = as.matrix(mdl$y)
+# mdl <- lm(1 ~ dat$Wind[169] + 
+#             dat$Consumption[169] + 
+#             dat$Price[145] +
+#             dat$Price[168]+
+#             dat$Price[1],
+#           x=T,y=T)
+# (XX = as.matrix(mdl$x))
+# Y = as.matrix(mdl$y)
 
 #nSamp= 8759
+#nSamp = 1000
+#nSampYear= 8759
+nSampYear = 4000
 nSamp = 1000
-#XX = matrix(XX,nrow=,ncol=7,byrow=T)
-Pt = dat$Price[169:nSamp]
-Pt1 = dat$Price[(169-1):(nSamp-1)]
+#mdl <- lm(rep(1,(nSamp-168)) ~ dat$Wind[169:nSamp] +
+#Xvar = data.frame(price = dat$Price, W169 = dat$Wind,L169=dat$Consumption,P168=lag(dat$Price,1),P145=lag(dat$Price,24),P1=lag(dat$Price,168))
+Xvar = data.frame(price = dat$Price[169:(nSamp)], W169 = dat$Wind[169:nSamp],L169=dat$Consumption[169:nSamp],
+                  P168=dat$Price[168:(nSamp-1)],P145=dat$Price[145:(nSamp-24)],P1=dat$Price[1:(nSamp-168)])
+# mdl <- lm(dat$Price[1:(nSamp-168)] 
+#           ~ dat$Wind[169:nSamp] + 
+#             dat$Consumption[169:nSamp] + 
+#             dat$Price[168:(nSamp-1)] +
+#             dat$Price[145:(nSamp-24)]+
+#             dat$Price[1:(nSamp-168)],
+#           x=T,y=T)
+mdl <- lm(price ~ W169+L169+P168+P145+P1,data=Xvar[1:nSamp,],x=T,y=T)
+Y = as.matrix(mdl$y)
+acf(mdl$residuals)
+pacf(mdl$residuals)
+#XX = as.matrix(mdl$x)
 
-Lt = dat$Consumption[169:nSamp]
-Pt24 = dat$Price[ (169-24) :(nSamp-24)]
-Pt168 = dat$Price[1:(nSamp - 168)]
-Wt = dat$Wind[169:nSamp]
-P0 = rep(1,(nSamp-168))
-err = c(mdl$residuals, rep(0,(nSamp- 168-1)))
+Pt = dat$Price[169:nSampYear]
+Pt1 = dat$Price[(169-1):(nSampYear-1)]
+Lt = dat$Consumption[169:nSampYear]
+Pt24 = dat$Price[ (169-24) :(nSampYear-24)]
+Pt168 = dat$Price[1:(nSampYear - 168)]
+Wt = dat$Wind[169:nSampYear]
+P0 = rep(1,(nSampYear-168))
+err = c(mdl$residuals, rep(0.01,(length(Pt)-length(mdl$residuals))))
 
-XX = cbind(P0,Wt,Lt,Pt1,Pt24,Pt168,err)
+XX = cbind(P0,Wt,Lt,Pt168,Pt24,Pt1,err)
 
 # Initialize-a th?etu, sem 0 vigur
 theta = matrix(0,7,1)
@@ -76,13 +94,7 @@ yhat <- rep(NA,nrow(XX))
 lmbd <- 1
 # gera recursive:
 # for t = 169:n
-for(tt in 169:n){
-   
-  # Reikna R(t) =  lambda*R(t-1) + x(t)*x(t)^T   byrja med lambda = 1, fa til ad virka
-  # Uppfaera theta(theta) = theta(t-1)+R(t)^-1*x(t)*(Y(t)-X(t)^T*theta(t-1)) setja try utanum if(class(þeta)!="try-error") ef þetta heldur þá þetta true og þá hægt að reikna restina af dótinu
-  # Reikna Y(t+k|t) = Price(t) = langa jafnan
-  # a morgun veit eg 
-  # Uppfaera X, þe. uppfaera eps   
+for(tt in 1:n){  
   
   xt <- XX[tt,]
   #Update Rt
