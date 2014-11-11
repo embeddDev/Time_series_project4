@@ -15,8 +15,10 @@ dat$Time <- seq(as.POSIXct(as.character(dat$Date[1]),format="%e.%m.%Y",tz="CET")
 dat$Hours <- as.numeric(dat$Hours)
 #dat$Price = as.numeric(dat$Price)
 dat$Date <- format(dat$Time,format="%Y-%m-%d")
-dat2013 = dat[]
-plot(ts(dat$Price,start=c(2013,1),f=(365*24)),
+dat$Price = ts(dat$Price, start=c(2013,1),frequency=24*365)
+dat$Wind = ts(dat$Wind, start=c(2013,1),frequency=24*365)
+dat$Consumption = ts(dat$Consumption, start=c(2013,1),frequency=24*365)
+plot(dat$Price,
      type = 'l',
      main='Price of Electricity',
      xlab='Time Index',
@@ -27,6 +29,8 @@ plot(ts(dat$Price,start=c(2013,1),f=(365*24)),
 
 dat$Price[dat$Price > 600] <- 600
 dat$Price[dat$Price < 0] <- 0
+dat2013 = dat[169:8759,]
+dat2014 = dat[(8760:length(dat$Price)),]
 plot(dat$Price,
      type = 'l',
      main='Price of Electricity',
@@ -39,36 +43,28 @@ layout(1:2)
 acf(dat$Price)
 pacf(dat$Price)
 # Greinilega eitthvad seasonal i tessu, notum (1,0,1)^24 og (1,0,0)^168 eins og gefid er i verkefni
-
-# mdl <- lm(1 ~ dat$Wind[169] + 
-#             dat$Consumption[169] + 
-#             dat$Price[145] +
-#             dat$Price[168]+
-#             dat$Price[1],
-#           x=T,y=T)
-# (XX = as.matrix(mdl$x))
-# Y = as.matrix(mdl$y)
-
-#nSamp= 8759
-#nSamp = 1000
-#nSampYear= 8759
-nSampYear = 4000
+nSampYear= 8759
+#nSampYear = 4000
 nSamp = 1000
 #mdl <- lm(rep(1,(nSamp-168)) ~ dat$Wind[169:nSamp] +
 #Xvar = data.frame(price = dat$Price, W169 = dat$Wind,L169=dat$Consumption,P168=lag(dat$Price,1),P145=lag(dat$Price,24),P1=lag(dat$Price,168))
-Xvar = data.frame(price = dat$Price[169:(nSamp)], W169 = dat$Wind[169:nSamp],L169=dat$Consumption[169:nSamp],
-                  P168=dat$Price[168:(nSamp-1)],P145=dat$Price[145:(nSamp-24)],P1=dat$Price[1:(nSamp-168)])
-# mdl <- lm(dat$Price[1:(nSamp-168)] 
-#           ~ dat$Wind[169:nSamp] + 
-#             dat$Consumption[169:nSamp] + 
-#             dat$Price[168:(nSamp-1)] +
-#             dat$Price[145:(nSamp-24)]+
-#             dat$Price[1:(nSamp-168)],
-#           x=T,y=T)
-mdl <- lm(price ~ W169+L169+P168+P145+P1,data=Xvar[1:nSamp,],x=T,y=T)
-Y = as.matrix(mdl$y)
-acf(mdl$residuals)
-pacf(mdl$residuals)
+Xvar2013 = data.frame(price = dat$Price[169:(nSampYear)], 
+                  W169 = dat$Wind[169:nSampYear],
+                  L169=dat$Consumption[169:nSampYear],
+                  P168=dat$Price[168:(nSampYear-1)],
+                  P145=dat$Price[145:(nSampYear-24)],
+                  P1=dat$Price[1:(nSampYear-168)])
+mdl2013 <- lm(price ~ W169+L169+P168+P145+P1,data=Xvar2013,x=T,y=T)
+Xvar = data.frame(price = dat$Price[169:(nSamp)], 
+                      W169 = dat$Wind[169:nSamp],
+                      L169=dat$Consumption[169:nSamp],
+                      P168=dat$Price[168:(nSamp-1)],
+                      P145=dat$Price[145:(nSamp-24)],
+                      P1=dat$Price[1:(nSamp-168)])
+mdl <- lm(price ~ W169+L169+P168+P145+P1,data=Xvar,x=T,y=T)
+Y = as.matrix(mdl2013$y)
+acf(mdl2013$residuals)
+pacf(mdl2013$residuals)
 #XX = as.matrix(mdl$x)
 
 Pt = dat$Price[169:nSampYear]
@@ -78,8 +74,8 @@ Pt24 = dat$Price[ (169-24) :(nSampYear-24)]
 Pt168 = dat$Price[1:(nSampYear - 168)]
 Wt = dat$Wind[169:nSampYear]
 P0 = rep(1,(nSampYear-168))
-err = c(mdl$residuals, rep(0.01,(length(Pt)-length(mdl$residuals))))
-
+err = c(mdl$residuals, rep(0,(length(Pt)-length(mdl$residuals))))
+err = as.numeric(err)
 XX = cbind(P0,Wt,Lt,Pt168,Pt24,Pt1,err)
 
 # Initialize-a th?etu, sem 0 vigur
