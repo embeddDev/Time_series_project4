@@ -1,6 +1,6 @@
 ---
 title: "Assignment 4, part 1"
-author: "Lilja, Jón, Daníel"
+author: "Lilja Bjorg, Jón Vilberg, Daníel Bergmann"
 date: "Saturday, November 01, 2014"
 output: pdf_document
 ---
@@ -15,20 +15,21 @@ y = matrix(c(y_rm,y_theta),nrow=2,ncol=50,byrow=T)
 y  = cbind(y,matrix(NA,2,6))
 y[2,51:56] = NA
 sat.dat$V3 = NULL
-
+```
  #TASK1 - State space model
 
-#we have  >>>  x = t[r theta omega]
-#we want >>> x' = A*x +B*u and y = Cx
-#B*u is zero, because there is no input to the system
-# all states are output, thus, C is an identity matrix, dimension 2x3
+we have  >>>  x = t[r theta omega]
+we want >>> x' = A*x +B*u and y = Cx
+B*u is zero, because there is no input to the system
+ all states are output, thus, C is an identity matrix, dimension 2x3
+```{r}
 A = matrix(c(1,0,0, 0,1,1, 0,0,1),nrow=3,ncol=3,byrow=TRUE,
            dimnames = list(c("row1", "row2","row3"),
                            c("C.1", "C.2", "C.3")))
 C = matrix(c(1,0,0, 0,1,0),nrow=2,ncol=3,byrow=TRUE)
-
+```
 #Part 2
-
+```{r}
 qr(cbind(t(C),t(C%*%A)))$rank
 sigma1 = matrix(c(500,0,0, 0, 0.005,0 , 0,0,0.005),nrow=3,ncol=3,byrow=TRUE) #var in diag
 sigma2 = matrix(c(2000,0, 0,0.03),nrow=2,ncol=2,byrow=TRUE)
@@ -39,19 +40,23 @@ Kt.store <- matrix(NA,n,6)
 Xhr <- Xhp <- matrix(NA,n,3)
 Sxx.r <- Sxx.p <- matrix(NA,n,9) # 3x3 flett ut
 Syy.p <- matrix(NA,nrow=n,ncol=4)            # 2x2 flett ut
-
+```
 # Initiailzation
+```{r}
 Xh.t.tm1 <- matrix(c(sat.dat$rm[1], sat.dat$theta_m[1],0),nrow=3,ncol=1,byrow=T)
 Sxx.t.tm1 <- sigma1 #G * sigma1 * t(G)
 Syy.t.tm1 <- C %*% Sxx.t.tm1 %*% t(C) +sigma2
+```
 
 # Reconstruction
+```{r}
 Kt <- Sxx.t.tm1 %*% t(C) %*% solve(Syy.t.tm1)
 
 Xh.t.t <- Xh.t.tm1 + Kt %*% (y[,1] - C%*%Xh.t.tm1)  
 Sxx.t.t = Sxx.t.tm1 - Kt %*% Syy.t.tm1 %*% t(Kt)
-
+```
 #Prediction
+```{r}
 Xh.tp1.t <- A %*% Xh.t.t
 Sxx.tp1.t <- A %*% Sxx.t.t %*% t(A) + sigma1
 Syy.tp1.t <- C %*% Sxx.tp1.t %*% t(C) + sigma2
